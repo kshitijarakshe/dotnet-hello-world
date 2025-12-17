@@ -1,19 +1,23 @@
-# Stage 1: Build
+# Use .NET 6 SDK to build the app
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
-# Copy csproj first for restore
-COPY *.csproj ./
-RUN dotnet restore
+# Copy everything to /app
+COPY . .
 
-# Copy all other files
-COPY . ./
-RUN dotnet publish -c Release -o out
+# Restore dependencies for the solution
+RUN dotnet restore "dotnet-hello-world.sln"
 
-# Stage 2: Runtime
+# Build and publish the project
+RUN dotnet publish "dotnet-hello-world.sln" -c Release -o /app/out
+
+# Use .NET 6 runtime for the final image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/out ./
+COPY --from=build /app/out .
 
-EXPOSE 80
-ENTRYPOINT ["dotnet", "Net-application.dll"]
+# Expose port (adjust if your API uses another port)
+EXPOSE 5000
+
+# Run the application
+ENTRYPOINT ["dotnet", "hello-world-api.dll"]
