@@ -48,7 +48,7 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                sh 'curl -f http://<EC2_PUBLIC_IP>:5000/ || exit 1'
+                sh 'curl -f http://51.20.134.44:5000/ || exit 1'
             }
         }
     }
