@@ -1,28 +1,28 @@
-# Use official .NET SDK image
+# Use .NET 6 SDK for build
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy everything into the container
+# Copy everything from repo to container
 COPY . .
 
-# Set working directory to the project folder
-WORKDIR /app/hello-world-api
-
-# Restore dependencies
+# Restore dependencies (runs in the directory with .csproj)
 RUN dotnet restore
 
-# Build the project
-RUN dotnet publish -c Release -o out
+# Build the project in Release mode
+RUN dotnet build -c Release -o out
 
-# Use a smaller runtime image
+# Publish the app
+RUN dotnet publish -c Release -o out/publish
+
+# Use .NET 6 ASP.NET runtime for final image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/hello-world-api/out ./
+COPY --from=build /app/out/publish .
 
-# Expose port
+# Expose port 80
 EXPOSE 80
 
-# Entry point
-ENTRYPOINT ["dotnet", "hello-world-api.dll"]
+# Start the application
+ENTRYPOINT ["dotnet", "Net-application.dll"]
