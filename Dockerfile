@@ -2,24 +2,20 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
-# Copy everything
-COPY . ./
+# Copy only csproj and restore dependencies
+COPY hello-world-api/hello-world-api.csproj ./hello-world-api/
+RUN dotnet restore hello-world-api/hello-world-api.csproj
 
-# Restore the solution
-RUN dotnet restore dotnet-hello-world.sln
+# Copy the rest of the source code
+COPY hello-world-api/. ./hello-world-api/
 
-# Build the solution
-RUN dotnet build dotnet-hello-world.sln -c Release -o /app/build
+# Build and publish
+RUN dotnet publish hello-world-api/hello-world-api.csproj -c Release -o /app/out
 
-# Publish
-RUN dotnet publish dotnet-hello-world.sln -c Release -o /app/publish
-
-# Stage 2: Runtime
+# Stage 2: Runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
+COPY --from=build /app/out .
 
-# Copy the published app
-COPY --from=build /app/publish .
-
-# Start the application
-ENTRYPOINT ["dotnet", "dotnet-hello-world.dll"]
+# Run the application
+ENTRYPOINT ["dotnet", "hello-world-api.dll"]
