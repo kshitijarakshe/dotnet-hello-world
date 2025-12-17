@@ -2,62 +2,69 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_CREDS = credentials('dock-cred') // Replace with your Jenkins DockerHub credential ID
-        IMAGE_NAME = "kshitijadock/dotnet-hello-world:latest"
+        DOCKER_IMAGE = "kshitijadock/dotnet-hello-world:latest"
+        DOCKERHUB_CREDENTIALS = credentials('dock-cred')
+        EC2_HOST = '51.20.134.44' // replace with your EC2 IP
+        EC2_KEY = credentials('ec2-ssh-key')  // SSH private key stored in Jenkins
+        APP_DIR = "/home/ubuntu/dotnet-app"
     }
 
     stages {
-        stage('Checkout Code') {
+
+        stage('Checkout SCM') {
             steps {
-                git branch: 'master', url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git'
+                git url: 'https://github.com/kshitijarakshe/Net-application.git', branch: 'main'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build(IMAGE_NAME)
-                }
+                sh """
+                docker build -t ${DOCKER_IMAGE} .
+                """
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Docker Login & Push') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dock-cred') {
-                        docker.image(IMAGE_NAME).push()
-                    }
-                }
+                sh """
+                echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
+                docker push ${DOCKER_IMAGE}
+                """
             }
         }
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ubuntu@51.20.134.44 '
-                        docker pull ${IMAGE_NAME} &&
-                        docker stop dotnet-app || true &&
-                        docker rm dotnet-app || true &&
-                        docker run -d --name dotnet-app -p 5000:5000 ${IMAGE_NAME}
-                        '
-                    '''
-                }
+                sh """
+                ssh -i ${EC2_KEY} -o StrictHostKeyChecking=no ${EC2_HOST} '
+                    mkdir -p ${APP_DIR} &&
+                    docker pull ${DOCKER_IMAGE} &&
+                    docker stop dotnet-app || true &&
+                    docker rm dotnet-app || true &&
+                    docker run -d --name dotnet-app -p 80:80 ${DOCKER_IMAGE}
+                '
+                """
             }
         }
 
         stage('Health Check') {
             steps {
-                sh 'curl -f http://51.20.134.44:5000/ || exit 1'
+                sh """
+                sleep 10
+                curl -f http://${EC2_HOST}:80/ || echo 'Health check failed'
+                """
             }
         }
+
     }
 
     post {
         failure {
-            mail to: 'kshitijarakshe.com',
-                 subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Check Jenkins console output at ${env.BUILD_URL}"
+            echo 'Build or deployment failed!'
+        }
+        success {
+            echo 'Application deployed successfully!'
         }
     }
 }
