@@ -13,7 +13,7 @@ pipeline {
 
         stage('Checkout SCM') {
             steps {
-                git url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git', branch: 'main'
+                git url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git', branch: 'master'
             }
         }
 
