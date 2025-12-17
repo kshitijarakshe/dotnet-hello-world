@@ -1,19 +1,19 @@
-# ---------- Build Stage ----------
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
-COPY . .
-
-# Move into project folder (IMPORTANT)
-WORKDIR /app/Net-application
-
+# Copy csproj first for restore
+COPY *.csproj ./
 RUN dotnet restore
-RUN dotnet publish -c Release -o /app/out
 
-# ---------- Runtime Stage ----------
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+# Copy all other files
+COPY . ./
+RUN dotnet publish -c Release -o out
+
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
+COPY --from=build /app/out ./
 
-COPY --from=build /app/out .
-EXPOSE 5000
+EXPOSE 80
 ENTRYPOINT ["dotnet", "Net-application.dll"]
