@@ -1,17 +1,25 @@
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
-# Copy project file first (for layer caching)
-COPY *hello-world-api.csproj ./
-RUN dotnet restore
-
-# Copy remaining files
+# Copy everything
 COPY . ./
 
-# Build and publish
-RUN dotnet publish -c Release -o out
+# Restore the solution
+RUN dotnet restore dotnet-hello-world.sln
 
+# Build the solution
+RUN dotnet build dotnet-hello-world.sln -c Release -o /app/build
+
+# Publish
+RUN dotnet publish dotnet-hello-world.sln -c Release -o /app/publish
+
+# Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
-COPY --from=build /app/out .
-ENTRYPOINT ["dotnet", "Net-application.dll"]
+
+# Copy the published app
+COPY --from=build /app/publish .
+
+# Start the application
+ENTRYPOINT ["dotnet", "dotnet-hello-world.dll"]
