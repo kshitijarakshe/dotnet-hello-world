@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "kshitijadock/dotnet-hello-world:latest"
         DOCKERHUB_CREDENTIALS = credentials('dock-cred')
-        EC2_HOST = '51.20.134.44' // replace with your EC2 IP
+        EC2_HOST = '16.16.58.67' // replace with your EC2 IP
         EC2_KEY = credentials('ec2-ssh-key')  // SSH private key stored in Jenkins
         APP_DIR = "/home/ubuntu/dotnet-app"
     }
@@ -13,7 +13,7 @@ pipeline {
 
         stage('Checkout SCM') {
             steps {
-                git url: 'https://github.com/kshitijarakshe/Net-application.git', branch: 'main'
+                git url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git', branch: 'main'
             }
         }
 
