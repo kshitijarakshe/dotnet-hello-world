@@ -39,7 +39,7 @@ pipeline {
 
         stage('Checkout Source Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git'
+                git branch: 'master', url: 'https://github.com/kshitijarakshe/dotnet-hello-world.git'
             }
         }
 
